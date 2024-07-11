@@ -1,0 +1,168 @@
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Linq;
+using System.Web;
+using System.Web.Services.Description;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+
+namespace Emicalculator
+{
+    public partial class Emi_calculator : System.Web.UI.Page
+    {
+        protected void Page_Load(object sender, EventArgs e)
+        {
+
+        }
+
+        protected void TextBox1_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        protected void Button1_Click(object sender, EventArgs e)
+        {
+            // Get input values from textboxes
+            double loanAmount = Convert.ToDouble(TextBox1.Text);
+            double annualInterestRate = Convert.ToDouble(TextBox2.Text);
+            int loanTenure = Convert.ToInt32(TextBox3.Text);
+
+            // Create a DataTable to store the amortization schedule
+            DataTable dt = new DataTable();
+            dt.Columns.Add("Year", typeof(int));
+            dt.Columns.Add("Month", typeof(string));
+            dt.Columns.Add("Principal (A)", typeof(int));
+            dt.Columns.Add("Interest (B)", typeof(int));
+            dt.Columns.Add("Total Payment (A + B)", typeof(int));
+            dt.Columns.Add("Balance", typeof(int));
+            dt.Columns.Add("Loan Paid To Date", typeof(int));
+            dt.Columns.Add("Percentage Paid", typeof(int));
+
+            // Calculate monthly interest rate
+            double monthlyInterestRate = annualInterestRate / 12 / 100;
+
+            // Calculate total number of months
+            int totalMonths = loanTenure * 12;
+
+            // Calculate monthly payment
+            double monthlyPayment = CalculateMonthlyPayment(loanAmount, monthlyInterestRate, totalMonths);
+
+            // Initialize variables for tracking payments
+            double remainingBalance = loanAmount;
+            double totalLoanPaid = 0;
+
+            
+
+
+     
+
+            // Calculate EMI
+            double emi = CalculateEMI(loanAmount, annualInterestRate, loanTenure);
+
+            // Calculate total interest payable
+            double totalInterest = CalculateTotalInterest(emi, loanAmount, loanTenure);
+
+            // Calculate total payment
+            double totalPayment = loanAmount + totalInterest;
+
+            Label5.Text += "Loan EMI  :  ₹ " + Math.Round(emi, 2);
+            Label6.Text += "Interest   :  ₹ " + Math.Round(totalInterest, 2) ;
+            Label8.Text += "Payment    :  ₹ " + Math.Round(totalPayment, 2) ;
+
+            // Display results
+
+
+
+            // Iterate over each month and calculate payments
+            for (int i = 0; i < totalMonths; i++)
+            {
+                // Calculate interest for the month
+                double interestPayment = remainingBalance * monthlyInterestRate;
+
+                // Calculate principal payment for the month
+                double principalPayment = monthlyPayment - interestPayment;
+
+                // Update remaining balance
+                remainingBalance -= principalPayment;
+
+                // Update total loan paid
+                totalLoanPaid += principalPayment;
+
+                // Calculate percentage paid
+                double percentagePaid = (totalLoanPaid / loanAmount) * 100;
+
+                // Round off all decimal values to integers
+                int roundedPrincipalPayment = (int)Math.Round(principalPayment);
+                int roundedInterestPayment = (int)Math.Round(interestPayment);
+                int roundedMonthlyPayment = (int)Math.Round(monthlyPayment);
+                int roundedRemainingBalance = (int)Math.Round(remainingBalance);
+                int roundedTotalLoanPaid = (int)Math.Round(totalLoanPaid);
+                int roundedPercentagePaid = (int)Math.Round(percentagePaid);
+
+                // Add a new row to the DataTable
+                DataRow dr = dt.NewRow();
+                dr["Year"] = GetYear(i);
+                dr["Month"] = GetMonthName(GetMonth(i));
+                dr["Principal (A)"] = roundedPrincipalPayment;
+                dr["Interest (B)"] = roundedInterestPayment;
+                dr["Total Payment (A + B)"] = roundedMonthlyPayment;
+                dr["Balance"] = roundedRemainingBalance;
+                dr["Loan Paid To Date"] = roundedTotalLoanPaid;
+                dr["Percentage Paid"] = roundedPercentagePaid;
+                dt.Rows.Add(dr);
+            }
+
+            // Bind the DataTable to a GridView
+            GridView1.DataSource = dt;
+            GridView1.DataBind();
+
+        }
+
+        // Calculate monthly payment using the formula
+        private double CalculateMonthlyPayment(double loanAmount, double monthlyInterestRate, int totalMonths)
+        {
+            return (loanAmount * monthlyInterestRate * Math.Pow(1 + monthlyInterestRate, totalMonths)) / (Math.Pow(1 + monthlyInterestRate, totalMonths) - 1);
+        }
+
+        // Get the year from the month number
+        private int GetYear(int iteration)
+        {
+            DateTime now = DateTime.Now;
+            DateTime month = now.AddMonths(iteration);
+            return month.Year;
+        }
+
+        private string GetMonthName(int iteration)
+        {
+            DateTime now = DateTime.Now;
+            DateTime month = now.AddMonths(iteration);
+            return month.ToString("MMM");
+        }
+
+
+        // Get the month number from the iteration
+        private int GetMonth(int iteration)
+        {
+            return (iteration % 12) ;
+        }
+
+        private static double CalculateEMI(double loanAmount, double interestRate, int loanTenure)
+        {
+            double monthlyInterestRate = interestRate / (12 * 100);
+            double numberOfPayments = loanTenure * 12;
+            double emi = (loanAmount * monthlyInterestRate * Math.Pow(1 + monthlyInterestRate, numberOfPayments)) / (Math.Pow(1 + monthlyInterestRate, numberOfPayments) - 1);
+            return emi;
+        }
+
+        private static double CalculateTotalInterest(double emi, double loanAmount, int loanTenure)
+        {
+            return (emi * loanTenure * 12) - loanAmount;
+        }
+
+        protected void TextBox4_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+    }
+}
